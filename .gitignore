@@ -1,0 +1,4 @@
+.DS_Store
+strong-proxy.db
+idea/*
+go-strong-manager/backups/*
