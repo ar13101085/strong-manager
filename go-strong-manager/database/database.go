@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var (
@@ -30,7 +30,7 @@ func Initialize() {
 	}
 
 	var err error
-	DB, err = sql.Open("sqlite3", "./strong-proxy.db")
+	DB, err = sql.Open("sqlite", "./strong-proxy.db")
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  strong-manager-admin-panel:
+    build: .
+    ports:
+      - "3000:3000"
+      - "8091:8091"
+      - "89:89"
+    volumes:
+      - .:/app
