@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/arifur/strong-reverse-proxy/database"
@@ -24,7 +26,8 @@ func main() {
 
 	// Create admin API server with Fiber
 	app := fiber.New(fiber.Config{
-		AppName: "Strong Reverse Proxy - Admin API",
+		AppName:   "Strong Reverse Proxy - Admin API",
+		BodyLimit: 1024 * 1024 * 100, // 10MB
 	})
 
 	// Admin server middleware
@@ -38,6 +41,9 @@ func main() {
 	// Initialize DB first, before creating rate limiter
 	database.Initialize()
 	defer database.Close()
+
+	// Initialize buffered logger for better performance
+	database.InitBufferedLogger()
 
 	// Clean up any orphaned backends
 	handlers.CleanupOrphanedBackends()
@@ -65,17 +71,40 @@ func main() {
 	adminPort := getEnv("ADMIN_PORT", "8089")
 	proxyPort := getEnv("PROXY_PORT", "89")
 
+	// Set up graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
 	// Start the admin server on a different port
 	go func() {
 		log.Printf("Starting admin server on port %s", adminPort)
-		log.Fatal(app.Listen(":" + adminPort))
+		if err := app.Listen(":" + adminPort); err != nil {
+			log.Printf("Admin server error: %v", err)
+		}
 	}()
 
-	// Start the HTTP proxy server on the standard port
-	err = proxy.StartProxyServer(":" + proxyPort)
-	if err != nil {
-		log.Fatalf("Failed to start proxy server: %v", err)
-	}
+	// Start the HTTP proxy server on the standard port in a goroutine
+	go func() {
+		log.Printf("Starting proxy server on port %s", proxyPort)
+		if err := proxy.StartProxyServer(":" + proxyPort); err != nil {
+			log.Printf("Proxy server error: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-c
+	log.Println("Shutting down gracefully...")
+
+	// Flush any remaining logs
+	database.FlushNow()
+
+	// Stop the buffered logger
+	database.StopBufferedLogger()
+
+	// Close database
+	database.Close()
+
+	log.Println("Shutdown complete")
 }
 
 // getEnv gets an environment variable or returns a default value

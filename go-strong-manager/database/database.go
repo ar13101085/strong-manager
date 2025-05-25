@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"sync"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -30,13 +31,47 @@ func Initialize() {
 	}
 
 	var err error
-	DB, err = sql.Open("sqlite", "./strong-proxy.db")
+	DB, err = sql.Open("sqlite", "./strong-proxy.db?_journal_mode=WAL&_synchronous=NORMAL&_cache_size=1000&_timeout=5000&_busy_timeout=5000")
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	// Configure connection pool
+	DB.SetMaxOpenConns(25)
+	DB.SetMaxIdleConns(25)
+	DB.SetConnMaxLifetime(5 * time.Minute)
+
+	// Enable WAL mode and other optimizations
+	_, err = DB.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		log.Printf("Warning: Failed to set WAL mode: %v", err)
+	}
+
+	_, err = DB.Exec("PRAGMA synchronous = NORMAL;")
+	if err != nil {
+		log.Printf("Warning: Failed to set synchronous mode: %v", err)
+	}
+
+	_, err = DB.Exec("PRAGMA cache_size = 1000;")
+	if err != nil {
+		log.Printf("Warning: Failed to set cache size: %v", err)
+	}
+
+	_, err = DB.Exec("PRAGMA temp_store = memory;")
+	if err != nil {
+		log.Printf("Warning: Failed to set temp store: %v", err)
+	}
+
+	_, err = DB.Exec("PRAGMA busy_timeout = 5000;")
+	if err != nil {
+		log.Printf("Warning: Failed to set busy timeout: %v", err)
+	}
+
 	// Create tables if they don't exist
 	createTables()
+
+	// Create indexes for better performance
+	createIndexes()
 
 	initialized = true
 }
@@ -149,6 +184,25 @@ func addColumnsIfNotExist() {
 			} else {
 				log.Printf("Added column %s to %s", col.column, col.table)
 			}
+		}
+	}
+}
+
+// createIndexes creates database indexes for better performance
+func createIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_timestamp ON request_logs(timestamp)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_hostname ON request_logs(hostname)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_backend_id ON request_logs(backend_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_status_code ON request_logs(status_code)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_is_success ON request_logs(is_success)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_client_ip ON request_logs(client_ip)`,
+	}
+
+	for _, indexQuery := range indexes {
+		_, err := DB.Exec(indexQuery)
+		if err != nil {
+			log.Printf("Warning: Failed to create index: %v", err)
 		}
 	}
 }

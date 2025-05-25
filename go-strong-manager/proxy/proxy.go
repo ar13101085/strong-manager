@@ -30,7 +30,7 @@ func Initialize() {
 	// Load DNS rules into cache initially
 	refreshCache()
 
-	// Start a goroutine to periodically refresh the cache
+	/* // Start a goroutine to periodically refresh the cache
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -38,7 +38,7 @@ func Initialize() {
 		for range ticker.C {
 			refreshCache()
 		}
-	}()
+	}() */
 }
 
 // refreshCache updates the in-memory cache of DNS rules
@@ -135,13 +135,7 @@ func selectBackend(backends []models.Backend) *models.Backend {
 		// If there's only one backend, increment its count and return it
 		backendCountMapLock.Lock()
 		backendCountMap[backends[0].URL]++
-		selectedCount := backendCountMap[backends[0].URL]
 		backendCountMapLock.Unlock()
-
-		// For debugging
-		fmt.Printf("Selected single backend: %s (ID: %d, Count: %d)\n",
-			backends[0].URL, backends[0].ID, selectedCount)
-
 		return &backends[0]
 	}
 
@@ -177,17 +171,10 @@ func selectBackend(backends []models.Backend) *models.Backend {
 			maxPriorityValue = priority
 			selectedBackend = backend
 		}
-
-		fmt.Printf("Backend: %s (ID: %d) priority: %.2f, selectedCount: %d, ratio: %.2f\n",
-			backend.URL, backend.ID, priority, selectedCount, backend.Ratio)
 	}
 
 	// Increment the selected backend's count
 	backendCountMap[selectedBackend.URL]++
-	selectedCount := backendCountMap[selectedBackend.URL]
-
-	fmt.Printf("Selected backend: %s (ID: %d) priority: %.2f, selectedCount: %d, ratio: %.2f\n",
-		selectedBackend.URL, selectedBackend.ID, maxPriorityValue, selectedCount, selectedBackend.Ratio)
 
 	return selectedBackend
 }
@@ -259,25 +246,10 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// logRequest logs the request to the database
+// logRequest logs the request to the database using buffered logging
 func logRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool) {
-
-	// Insert log entry
-	_, err := database.DB.Exec(`
-		INSERT INTO request_logs (
-			client_ip, 
-			hostname, 
-			request_path,
-			backend_id, 
-			latency_ms, 
-			status_code, 
-			is_success
-		) VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, clientIP, hostname, requestPath, backendID, latencyMS, statusCode, isSuccess)
-
-	if err != nil {
-		fmt.Printf("Error logging request: %v\n", err)
-	}
+	// Use buffered logger to reduce database contention
+	database.LogRequest(clientIP, hostname, requestPath, backendID, latencyMS, statusCode, isSuccess)
 }
 
 // StartProxyServer starts the HTTP server for the proxy
