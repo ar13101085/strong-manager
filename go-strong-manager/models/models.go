@@ -48,14 +48,15 @@ type DNSRule struct {
 
 // RequestLog represents a log entry for a proxied request
 type RequestLog struct {
-	ID         int       `json:"id"`
-	Timestamp  time.Time `json:"timestamp"`
-	ClientIP   string    `json:"client_ip"`
-	Hostname   string    `json:"hostname"`
-	BackendID  int       `json:"backend_id"`
-	LatencyMS  int       `json:"latency_ms"`
-	StatusCode int       `json:"status_code"`
-	IsSuccess  bool      `json:"is_success"`
+	ID          int       `json:"id"`
+	Timestamp   time.Time `json:"timestamp"`
+	ClientIP    string    `json:"client_ip"`
+	Hostname    string    `json:"hostname"`
+	RequestPath string    `json:"request_path"`
+	BackendID   int       `json:"backend_id"`
+	LatencyMS   int       `json:"latency_ms"`
+	StatusCode  int       `json:"status_code"`
+	IsSuccess   bool      `json:"is_success"`
 }
 
 // HealthResponse represents the health check response

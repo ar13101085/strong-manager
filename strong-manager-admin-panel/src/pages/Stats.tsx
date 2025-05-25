@@ -38,6 +38,7 @@ interface LogEntry {
   timestamp: string;
   client_ip: string;
   hostname: string;
+  request_path: string;
   backend_id: number;
   backend_url: string;
   latency_ms: number;
@@ -679,6 +680,9 @@ const Stats: React.FC = () => {
                     Hostname
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Path
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Backend
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -702,6 +706,9 @@ const Stats: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {log.hostname}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                        {log.request_path || '/'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {log.backend_url}
                       </td>
@@ -719,7 +726,7 @@ const Stats: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
                       No request logs found
                     </td>
                   </tr>

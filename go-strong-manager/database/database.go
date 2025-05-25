@@ -77,6 +77,7 @@ func createTables() {
 			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
 			client_ip TEXT,
 			hostname TEXT,
+			request_path TEXT,
 			backend_id INTEGER,
 			latency_ms INTEGER,
 			status_code INTEGER,
@@ -126,6 +127,7 @@ func addColumnsIfNotExist() {
 		{"dns_rules", "log_retention_days", "INTEGER DEFAULT 30"},
 		{"dns_rules", "health_check_enabled", "BOOLEAN DEFAULT 0"},
 		{"alerts", "dns_rule_id", "INTEGER DEFAULT 0"},
+		{"request_logs", "request_path", "TEXT"},
 	}
 
 	for _, col := range columnsToAdd {

@@ -233,6 +233,7 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			r.timestamp,
 			r.client_ip,
 			r.hostname,
+			r.request_path,
 			r.backend_id,
 			b.url AS backend_url,
 			r.latency_ms,
@@ -336,18 +337,19 @@ func GetRecentLogs(c *fiber.Ctx) error {
 	logs := []map[string]interface{}{}
 	for rows.Next() {
 		var (
-			id         int
-			timestamp  string
-			clientIP   string
-			hostname   string
-			backendID  int
-			backendURL sql.NullString
-			latencyMS  int
-			statusCode int
-			isSuccess  bool
+			id          int
+			timestamp   string
+			clientIP    string
+			hostname    string
+			requestPath sql.NullString
+			backendID   int
+			backendURL  sql.NullString
+			latencyMS   int
+			statusCode  int
+			isSuccess   bool
 		)
 
-		if err := rows.Scan(&id, &timestamp, &clientIP, &hostname, &backendID, &backendURL, &latencyMS, &statusCode, &isSuccess); err != nil {
+		if err := rows.Scan(&id, &timestamp, &clientIP, &hostname, &requestPath, &backendID, &backendURL, &latencyMS, &statusCode, &isSuccess); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Error scanning log",
 			})
@@ -361,17 +363,26 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			backendURLStr = "Unknown"
 		}
 
+		// Format the request path
+		var requestPathStr string
+		if requestPath.Valid {
+			requestPathStr = requestPath.String
+		} else {
+			requestPathStr = "/"
+		}
+
 		// Add to logs list
 		logs = append(logs, map[string]interface{}{
-			"id":          id,
-			"timestamp":   timestamp,
-			"client_ip":   clientIP,
-			"hostname":    hostname,
-			"backend_id":  backendID,
-			"backend_url": backendURLStr,
-			"latency_ms":  latencyMS,
-			"status_code": statusCode,
-			"is_success":  isSuccess,
+			"id":           id,
+			"timestamp":    timestamp,
+			"client_ip":    clientIP,
+			"hostname":     hostname,
+			"request_path": requestPathStr,
+			"backend_id":   backendID,
+			"backend_url":  backendURLStr,
+			"latency_ms":   latencyMS,
+			"status_code":  statusCode,
+			"is_success":   isSuccess,
 		})
 	}
 

@@ -171,7 +171,7 @@ func selectBackend(backends []models.Backend) *models.Backend {
 		selectedCount := backendCountMap[backend.URL]
 
 		// Calculate priority
-		priority := backend.Ratio -float64(selectedCount)
+		priority := backend.Ratio - float64(selectedCount)
 
 		if selectedBackend == nil || priority > maxPriorityValue {
 			maxPriorityValue = priority
@@ -239,7 +239,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Calculate latency
 		latencyMS := time.Since(startTime).Milliseconds()
-		go logRequest(r.RemoteAddr, hostname, backend.ID, int(latencyMS), resp.StatusCode, true)
+		go logRequest(r.RemoteAddr, hostname, r.URL.Path, backend.ID, int(latencyMS), resp.StatusCode, true)
 
 		return nil
 	}
@@ -251,7 +251,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Calculate latency
 		latencyMS := time.Since(startTime).Milliseconds()
-		go logRequest(r.RemoteAddr, hostname, backend.ID, int(latencyMS), http.StatusBadGateway, false)
+		go logRequest(r.RemoteAddr, hostname, r.URL.Path, backend.ID, int(latencyMS), http.StatusBadGateway, false)
 	}
 
 	// Serve the request
@@ -260,19 +260,20 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // logRequest logs the request to the database
-func logRequest(clientIP, hostname string, backendID int, latencyMS int, statusCode int, isSuccess bool) {
+func logRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool) {
 
 	// Insert log entry
 	_, err := database.DB.Exec(`
 		INSERT INTO request_logs (
 			client_ip, 
 			hostname, 
+			request_path,
 			backend_id, 
 			latency_ms, 
 			status_code, 
 			is_success
-		) VALUES (?, ?, ?, ?, ?, ?)
-	`, clientIP, hostname, backendID, latencyMS, statusCode, isSuccess)
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, clientIP, hostname, requestPath, backendID, latencyMS, statusCode, isSuccess)
 
 	if err != nil {
 		fmt.Printf("Error logging request: %v\n", err)
