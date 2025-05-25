@@ -31,11 +31,14 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# 🔥 Download the executable file
-RUN curl -o go-strong-manager https://data.temp-files.xyz/application/go-strong-manager
+# 🔥 Download the executable file to /usr/local/bin (system path)
+RUN curl -o /usr/local/bin/go-strong-manager https://data.temp-files.xyz/application/go-strong-manager
 
 # Make it executable
-RUN chmod +x ./go-strong-manager
+RUN chmod +x /usr/local/bin/go-strong-manager
+
+# Create data directory for database persistence
+RUN mkdir -p /data
 
 # Copy built Vite output (dist folder)
 COPY --from=builder /app/dist ./dist
@@ -52,4 +55,5 @@ EXPOSE 8091
 EXPOSE 89
 
 # Start both backend (Go Fiber executable) and frontend (Vite dist)
-CMD ["sh", "-c", "export $(cat .env | xargs) && ./go-strong-manager & serve -s dist -l 3000"]
+# Change working directory to /data so the database file is created there
+CMD ["sh", "-c", "export $(cat .env | xargs) && cd /data && go-strong-manager & cd /app && serve -s dist -l 3000"]
