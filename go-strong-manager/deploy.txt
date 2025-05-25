@@ -1,0 +1,29 @@
+GOOS=linux GOARCH=amd64 go build -ldflags '-extldflags "-static"' -o go-strong-manager main.go && chmod 777 go-strong-manager
+
+
+service file:  /etc/systemd/system/go-strong-manager.service
+
+modify service from activate_service.sh
+
+first give permission -> chmod +x activate_service.sh && chmod 777 go-strong-manager && sudo ./activate_service.sh
+
+sudo systemctl daemon-reload
+sudo systemctl enable go-strong-manager.service
+sudo systemctl start go-strong-manager.service
+sudo systemctl restart go-strong-manager.service
+
+
+sudo systemctl status go-strong-manager.service
+
+
+
+Uninstall/Clean up service
+
+sudo systemctl stop go-strong-manager.service
+sudo systemctl disable go-strong-manager.service
+sudo rm /etc/systemd/system/go-strong-manager.service
+sudo systemctl daemon-reload
+
+
+
+sudo systemctl status go-strong-manager.service
