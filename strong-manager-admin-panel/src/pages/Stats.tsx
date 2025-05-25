@@ -201,6 +201,7 @@ const Stats: React.FC = () => {
   const [filters, setFilters] = useState({
     status_code: '',
     client_ip: '',
+    request_path: '',
     is_success: '',
     start_date: '',
     end_date: ''
@@ -337,6 +338,7 @@ const Stats: React.FC = () => {
     const emptyFilters = {
       status_code: '',
       client_ip: '',
+      request_path: '',
       is_success: '',
       start_date: '',
       end_date: ''
@@ -583,7 +585,7 @@ const Stats: React.FC = () => {
         {/* Filter Dialog */}
         {showFilters && (
           <div className="border-b border-gray-200 p-4 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status Code</label>
                 <input 
@@ -604,6 +606,17 @@ const Stats: React.FC = () => {
                   onChange={handleFilterFormChange}
                   className="w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. 192.168.1.1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Request Path</label>
+                <input 
+                  type="text" 
+                  name="request_path"
+                  value={filterForm.request_path}
+                  onChange={handleFilterFormChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. /api/users"
                 />
               </div>
               <div>

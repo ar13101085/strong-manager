@@ -213,6 +213,9 @@ func GetRecentLogs(c *fiber.Ctx) error {
 	// Get client IP filter if provided
 	clientIP := c.Query("client_ip", "")
 
+	// Get request path filter if provided
+	requestPath := c.Query("request_path", "")
+
 	// Get backend ID filter if provided
 	backendID, err := strconv.Atoi(c.Query("backend_id", "0"))
 	if err != nil {
@@ -277,6 +280,13 @@ func GetRecentLogs(c *fiber.Ctx) error {
 		countQuery += " AND r.client_ip LIKE ?"
 		params = append(params, "%"+clientIP+"%")
 		countParams = append(countParams, "%"+clientIP+"%")
+	}
+
+	if requestPath != "" {
+		query += " AND r.request_path LIKE ?"
+		countQuery += " AND r.request_path LIKE ?"
+		params = append(params, "%"+requestPath+"%")
+		countParams = append(countParams, "%"+requestPath+"%")
 	}
 
 	if backendID > 0 {
@@ -396,13 +406,14 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			"limit":        limit,
 		},
 		"filters": fiber.Map{
-			"hostname":    hostname,
-			"status_code": statusCode,
-			"client_ip":   clientIP,
-			"backend_id":  backendID,
-			"is_success":  successFilter,
-			"start_date":  startDate,
-			"end_date":    endDate,
+			"hostname":     hostname,
+			"status_code":  statusCode,
+			"client_ip":    clientIP,
+			"request_path": requestPath,
+			"backend_id":   backendID,
+			"is_success":   successFilter,
+			"start_date":   startDate,
+			"end_date":     endDate,
 		},
 	})
 }
