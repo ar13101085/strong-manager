@@ -200,7 +200,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	dnsRuleCacheLock.RUnlock()
 
 	if !exists || len(backends) == 0 {
-		http.Error(w, "No backends found for this hostname", http.StatusNotFound)
+		http.Error(w, "No backends found for this hostname "+hostname, http.StatusGone)
 		return
 	}
 
