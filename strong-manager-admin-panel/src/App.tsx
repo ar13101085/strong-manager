@@ -9,6 +9,7 @@ import Config from './pages/Config';
 import Stats from './pages/Stats';
 import Users from './pages/Users';
 import Database from './pages/Database';
+import RequestRules from './pages/RequestRules';
 import NotFound from './pages/NotFound';
 
 // Layout
@@ -44,6 +45,7 @@ function App() {
             <Route path="config" element={<Config />} />
             <Route path="stats" element={<Stats />} />
             <Route path="alerts" element={<Navigate to="/config" />} />
+            <Route path="request-rules" element={<RequestRules />} />
             <Route path="users" element={<Users />} />
             <Route path="database" element={<Database />} />
             <Route path="*" element={<NotFound />} />

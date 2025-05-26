@@ -57,6 +57,8 @@ type RequestLog struct {
 	LatencyMS   int       `json:"latency_ms"`
 	StatusCode  int       `json:"status_code"`
 	IsSuccess   bool      `json:"is_success"`
+	UserAgent   string    `json:"user_agent"`
+	FilteredBy  int       `json:"filtered_by,omitempty"` // ID of filter rule that matched, 0 if not filtered
 }
 
 // HealthResponse represents the health check response
@@ -94,4 +96,53 @@ type AlertEvent struct {
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
 	Sent      bool      `json:"sent"`
+}
+
+// FilterMatchType represents the type of filter match
+type FilterMatchType string
+
+const (
+	FilterMatchTypeIP   FilterMatchType = "ip"
+	FilterMatchTypePath FilterMatchType = "path"
+	FilterMatchTypeDNS  FilterMatchType = "dns"
+)
+
+// FilterActionType represents the type of filter action
+type FilterActionType string
+
+const (
+	FilterActionRedirect   FilterActionType = "redirect"
+	FilterActionBadRequest FilterActionType = "bad_request"
+	FilterActionTooMany    FilterActionType = "too_many"
+	FilterActionCustom     FilterActionType = "custom"
+)
+
+// FilterRule represents a request filter rule
+type FilterRule struct {
+	ID          int              `json:"id"`
+	Name        string           `json:"name"`
+	MatchType   FilterMatchType  `json:"match_type"`
+	MatchValue  string           `json:"match_value"`
+	ActionType  FilterActionType `json:"action_type"`
+	ActionValue string           `json:"action_value"` // Target URL for redirect, response text for bad_request/custom
+	StatusCode  int              `json:"status_code"`  // HTTP status code for custom action
+	IsActive    bool             `json:"is_active"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+	Priority    int              `json:"priority"` // Higher priority rules are checked first
+}
+
+// FilterLog represents a log entry for filtered requests
+type FilterLog struct {
+	ID          int       `json:"id"`
+	Timestamp   time.Time `json:"timestamp"`
+	ClientIP    string    `json:"client_ip"`
+	Hostname    string    `json:"hostname"`
+	RequestPath string    `json:"request_path"`
+	UserAgent   string    `json:"user_agent"`
+	FilterID    int       `json:"filter_id"`
+	MatchType   string    `json:"match_type"`
+	MatchValue  string    `json:"match_value"`
+	ActionType  string    `json:"action_type"`
+	StatusCode  int       `json:"status_code"`
 }

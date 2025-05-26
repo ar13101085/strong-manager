@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/arifur/strong-reverse-proxy/database"
+	"github.com/arifur/strong-reverse-proxy/filter"
 	"github.com/arifur/strong-reverse-proxy/handlers"
 	"github.com/arifur/strong-reverse-proxy/middleware"
 	"github.com/arifur/strong-reverse-proxy/proxy"
@@ -57,6 +58,9 @@ func main() {
 
 	// Initialize proxy and DNS cache
 	proxy.Initialize()
+
+	// Initialize filter system
+	filter.Initialize()
 
 	// Initialize log retention (prune logs based on DNS rule settings)
 	initLogRetention()
@@ -178,6 +182,15 @@ func setupAdminRoutes(app *fiber.App) {
 	alerts.Post("/", handlers.CreateAlert)
 	alerts.Patch("/:id", handlers.UpdateAlert)
 	alerts.Delete("/:id", handlers.DeleteAlert)
+
+	// Filter Rules
+	filterRules := api.Group("/filter-rules")
+	filterRules.Get("/", handlers.GetFilterRules)
+	filterRules.Post("/", handlers.CreateFilterRule)
+	filterRules.Patch("/:id", handlers.UpdateFilterRule)
+	filterRules.Delete("/:id", handlers.DeleteFilterRule)
+	filterRules.Patch("/:id/toggle", handlers.ToggleFilterRule)
+	filterRules.Get("/logs", handlers.GetFilterLogs)
 }
 
 // initLogRetention initializes the log retention mechanism

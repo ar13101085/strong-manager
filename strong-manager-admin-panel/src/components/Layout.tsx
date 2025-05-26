@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { RiServerLine, RiSettings3Line, RiDashboardLine, RiLineChartLine, RiNotification3Line, RiDatabase2Line } from 'react-icons/ri';
+import { RiServerLine, RiSettings3Line, RiDashboardLine, RiLineChartLine, RiNotification3Line, RiDatabase2Line, RiShieldLine } from 'react-icons/ri';
 import { BsGear, BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { FiUsers } from 'react-icons/fi';
 
@@ -124,6 +124,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </li>
               </ul>
             )}
+            
+            <NavItem 
+              to="/request-rules" 
+              icon={<RiShieldLine size={20} />} 
+              label="Request Rules" 
+              active={isActive('/request-rules')} 
+            />
             
             <NavItem 
               to="/stats" 

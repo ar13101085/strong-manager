@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/arifur/strong-reverse-proxy/database"
+	"github.com/arifur/strong-reverse-proxy/filter"
 	"github.com/arifur/strong-reverse-proxy/models"
 )
 
@@ -192,6 +193,33 @@ func (DebugTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 // proxyHandler is the main HTTP handler for proxying requests
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
+	// Check if request should be filtered first
+	filterResult, err := filter.FilterRequest(r)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if filterResult.Filtered {
+		// Handle filtered request
+		if filterResult.RedirectURL != "" {
+			// Redirect action
+			http.Redirect(w, r, filterResult.RedirectURL, filterResult.StatusCode)
+		} else {
+			// Other actions (bad_request, too_many, custom)
+			w.WriteHeader(filterResult.StatusCode)
+			if filterResult.Response != "" {
+				w.Write([]byte(filterResult.Response))
+			}
+		}
+
+		// Log the filtered request in request_logs table as well
+		userAgent := r.Header.Get("User-Agent")
+		clientIP := r.RemoteAddr
+		go logRequest(clientIP, r.Host, r.URL.Path, 0, 0, filterResult.StatusCode, false, userAgent, filterResult.Rule.ID)
+		return
+	}
+
 	// Extract hostname from request
 	hostname := r.Host
 	// Look up backends for this hostname
@@ -226,7 +254,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Calculate latency
 		latencyMS := time.Since(startTime).Milliseconds()
-		go logRequest(r.RemoteAddr, hostname, r.URL.Path, backend.ID, int(latencyMS), resp.StatusCode, true)
+		userAgent := r.Header.Get("User-Agent")
+		go logRequest(r.RemoteAddr, hostname, r.URL.Path, backend.ID, int(latencyMS), resp.StatusCode, true, userAgent, 0)
 
 		return nil
 	}
@@ -238,7 +267,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Calculate latency
 		latencyMS := time.Since(startTime).Milliseconds()
-		go logRequest(r.RemoteAddr, hostname, r.URL.Path, backend.ID, int(latencyMS), http.StatusBadGateway, false)
+		userAgent := req.Header.Get("User-Agent")
+		go logRequest(req.RemoteAddr, hostname, req.URL.Path, backend.ID, int(latencyMS), http.StatusBadGateway, false, userAgent, 0)
 	}
 
 	// Serve the request
@@ -247,9 +277,9 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // logRequest logs the request to the database using buffered logging
-func logRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool) {
+func logRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool, userAgent string, filteredBy int) {
 	// Use buffered logger to reduce database contention
-	database.LogRequest(clientIP, hostname, requestPath, backendID, latencyMS, statusCode, isSuccess)
+	database.LogRequest(clientIP, hostname, requestPath, backendID, latencyMS, statusCode, isSuccess, userAgent, filteredBy)
 }
 
 // StartProxyServer starts the HTTP server for the proxy

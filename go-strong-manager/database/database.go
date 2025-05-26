@@ -117,7 +117,10 @@ func createTables() {
 			latency_ms INTEGER,
 			status_code INTEGER,
 			is_success BOOLEAN,
-			FOREIGN KEY (backend_id) REFERENCES backends(id) ON DELETE SET NULL
+			user_agent TEXT,
+			filtered_by INTEGER DEFAULT 0,
+			FOREIGN KEY (backend_id) REFERENCES backends(id) ON DELETE SET NULL,
+			FOREIGN KEY (filtered_by) REFERENCES filter_rules(id) ON DELETE SET NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS alerts (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,6 +139,33 @@ func createTables() {
 			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
 			sent BOOLEAN DEFAULT 0,
 			FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS filter_rules (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			match_type TEXT CHECK(match_type IN ('ip', 'path', 'dns')) NOT NULL,
+			match_value TEXT NOT NULL,
+			action_type TEXT CHECK(action_type IN ('redirect', 'bad_request', 'too_many', 'custom')) NOT NULL,
+			action_value TEXT,
+			status_code INTEGER DEFAULT 200,
+			is_active BOOLEAN DEFAULT 1,
+			priority INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS filter_logs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+			client_ip TEXT,
+			hostname TEXT,
+			request_path TEXT,
+			user_agent TEXT,
+			filter_id INTEGER,
+			match_type TEXT,
+			match_value TEXT,
+			action_type TEXT,
+			status_code INTEGER,
+			FOREIGN KEY (filter_id) REFERENCES filter_rules(id) ON DELETE SET NULL
 		)`,
 	}
 
@@ -163,6 +193,8 @@ func addColumnsIfNotExist() {
 		{"dns_rules", "health_check_enabled", "BOOLEAN DEFAULT 0"},
 		{"alerts", "dns_rule_id", "INTEGER DEFAULT 0"},
 		{"request_logs", "request_path", "TEXT"},
+		{"request_logs", "user_agent", "TEXT"},
+		{"request_logs", "filtered_by", "INTEGER DEFAULT 0"},
 	}
 
 	for _, col := range columnsToAdd {
@@ -197,6 +229,13 @@ func createIndexes() {
 		`CREATE INDEX IF NOT EXISTS idx_request_logs_status_code ON request_logs(status_code)`,
 		`CREATE INDEX IF NOT EXISTS idx_request_logs_is_success ON request_logs(is_success)`,
 		`CREATE INDEX IF NOT EXISTS idx_request_logs_client_ip ON request_logs(client_ip)`,
+		`CREATE INDEX IF NOT EXISTS idx_request_logs_filtered_by ON request_logs(filtered_by)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_rules_active ON filter_rules(is_active)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_rules_priority ON filter_rules(priority DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_rules_match_type ON filter_rules(match_type)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_logs_timestamp ON filter_logs(timestamp)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_logs_client_ip ON filter_logs(client_ip)`,
+		`CREATE INDEX IF NOT EXISTS idx_filter_logs_filter_id ON filter_logs(filter_id)`,
 	}
 
 	for _, indexQuery := range indexes {

@@ -18,6 +18,8 @@ type LogEntry struct {
 	LatencyMS   int
 	StatusCode  int
 	IsSuccess   bool
+	UserAgent   string
+	FilteredBy  int
 	Timestamp   time.Time
 }
 
@@ -54,7 +56,7 @@ func InitBufferedLogger() {
 }
 
 // LogRequest adds a log entry to the buffer
-func LogRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool) {
+func LogRequest(clientIP, hostname, requestPath string, backendID int, latencyMS int, statusCode int, isSuccess bool, userAgent string, filteredBy int) {
 	if logger == nil {
 		InitBufferedLogger()
 	}
@@ -67,6 +69,8 @@ func LogRequest(clientIP, hostname, requestPath string, backendID int, latencyMS
 		LatencyMS:   latencyMS,
 		StatusCode:  statusCode,
 		IsSuccess:   isSuccess,
+		UserAgent:   userAgent,
+		FilteredBy:  filteredBy,
 		Timestamp:   time.Now(),
 	}
 
@@ -168,8 +172,10 @@ func (bl *BufferedLogger) batchInsert(entries []LogEntry) error {
 			backend_id, 
 			latency_ms, 
 			status_code, 
-			is_success
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			is_success,
+			user_agent,
+			filtered_by
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
@@ -187,6 +193,8 @@ func (bl *BufferedLogger) batchInsert(entries []LogEntry) error {
 			entry.LatencyMS,
 			entry.StatusCode,
 			entry.IsSuccess,
+			entry.UserAgent,
+			entry.FilteredBy,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to execute insert: %w", err)

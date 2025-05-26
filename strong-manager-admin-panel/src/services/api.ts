@@ -142,4 +142,32 @@ export const databaseAPI = {
   })
 };
 
+// Filter Rules API
+export const filterRulesAPI = {
+  getAll: () => api.get('/admin/api/filter-rules'),
+  create: (rule: {
+    name: string;
+    match_type: 'ip' | 'path' | 'dns';
+    match_value: string;
+    action_type: 'redirect' | 'bad_request' | 'too_many' | 'custom';
+    action_value: string;
+    status_code: number;
+    priority: number;
+    is_active: boolean;
+  }) => api.post('/admin/api/filter-rules', rule),
+  update: (id: number, rule: {
+    name?: string;
+    match_type?: 'ip' | 'path' | 'dns';
+    match_value?: string;
+    action_type?: 'redirect' | 'bad_request' | 'too_many' | 'custom';
+    action_value?: string;
+    status_code?: number;
+    priority?: number;
+    is_active?: boolean;
+  }) => api.patch(`/admin/api/filter-rules/${id}`, rule),
+  delete: (id: number) => api.delete(`/admin/api/filter-rules/${id}`),
+  toggle: (id: number) => api.patch(`/admin/api/filter-rules/${id}/toggle`),
+  getLogs: (limit = 100, page = 1) => api.get(`/admin/api/filter-rules/logs?limit=${limit}&page=${page}`),
+};
+
 export default api; 
