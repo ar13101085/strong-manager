@@ -44,6 +44,7 @@ interface LogEntry {
   latency_ms: number;
   status_code: number;
   is_success: boolean;
+  user_agent: string;
 }
 
 // Define pagination interface
@@ -202,6 +203,7 @@ const Stats: React.FC = () => {
     status_code: '',
     client_ip: '',
     request_path: '',
+    user_agent: '',
     is_success: '',
     start_date: '',
     end_date: ''
@@ -277,12 +279,12 @@ const Stats: React.FC = () => {
     refetchOnWindowFocus: false // Don't refetch when window regains focus
   });
   
-  // Get recent logs with pagination and filters
+    // Get recent logs with pagination and filters
   const { 
     data: logsResponse,
     isLoading: logsLoading,
     refetch: refetchLogs
-  } = useQuery<LogsResponse>({
+  } = useQuery({
     queryKey: ['recent-logs', selectedDNS, page, pageSize, filters],
     queryFn: async () => {
       const response = await healthAPI.getRecentLogs(pageSize, selectedDNS, page, filters);
@@ -290,13 +292,12 @@ const Stats: React.FC = () => {
       // Debug log to check the logs response
       console.log('Logs response:', response.data);
       
-      return response.data;
+      return response.data as LogsResponse;
     },
     staleTime: 30000, // Cache data for 30 seconds
     refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    keepPreviousData: true // Keep previous data while fetching new data
   });
-  
+
   // Extract logs data and pagination information
   const recentLogs = logsResponse?.data || [];
   const pagination = logsResponse?.pagination || { 
@@ -339,6 +340,7 @@ const Stats: React.FC = () => {
       status_code: '',
       client_ip: '',
       request_path: '',
+      user_agent: '',
       is_success: '',
       start_date: '',
       end_date: ''
@@ -620,6 +622,20 @@ const Stats: React.FC = () => {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">User Agent</label>
+                <input 
+                  type="text" 
+                  name="user_agent"
+                  value={filterForm.user_agent}
+                  onChange={handleFilterFormChange}
+                  className="w-full rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Mozilla, Chrome, curl"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select 
                   name="is_success"
@@ -631,6 +647,9 @@ const Stats: React.FC = () => {
                   <option value="true">Success</option>
                   <option value="false">Error</option>
                 </select>
+              </div>
+              <div>
+                {/* Empty div for spacing */}
               </div>
             </div>
             
@@ -699,6 +718,9 @@ const Stats: React.FC = () => {
                     Backend
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User Agent
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -725,6 +747,9 @@ const Stats: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {log.backend_url}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate" title={log.user_agent}>
+                        {log.user_agent || 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           log.is_success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -739,7 +764,7 @@ const Stats: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={8} className="px-6 py-10 text-center text-sm text-gray-500">
                       No request logs found
                     </td>
                   </tr>

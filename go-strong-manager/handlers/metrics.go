@@ -216,6 +216,9 @@ func GetRecentLogs(c *fiber.Ctx) error {
 	// Get request path filter if provided
 	requestPath := c.Query("request_path", "")
 
+	// Get user agent filter if provided
+	userAgent := c.Query("user_agent", "")
+
 	// Get backend ID filter if provided
 	backendID, err := strconv.Atoi(c.Query("backend_id", "0"))
 	if err != nil {
@@ -241,7 +244,8 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			b.url AS backend_url,
 			r.latency_ms,
 			r.status_code,
-			r.is_success
+			r.is_success,
+			r.user_agent
 		FROM 
 			request_logs r
 		LEFT JOIN 
@@ -287,6 +291,13 @@ func GetRecentLogs(c *fiber.Ctx) error {
 		countQuery += " AND r.request_path LIKE ?"
 		params = append(params, "%"+requestPath+"%")
 		countParams = append(countParams, "%"+requestPath+"%")
+	}
+
+	if userAgent != "" {
+		query += " AND r.user_agent LIKE ?"
+		countQuery += " AND r.user_agent LIKE ?"
+		params = append(params, "%"+userAgent+"%")
+		countParams = append(countParams, "%"+userAgent+"%")
 	}
 
 	if backendID > 0 {
@@ -357,9 +368,10 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			latencyMS   int
 			statusCode  int
 			isSuccess   bool
+			userAgent   sql.NullString
 		)
 
-		if err := rows.Scan(&id, &timestamp, &clientIP, &hostname, &requestPath, &backendID, &backendURL, &latencyMS, &statusCode, &isSuccess); err != nil {
+		if err := rows.Scan(&id, &timestamp, &clientIP, &hostname, &requestPath, &backendID, &backendURL, &latencyMS, &statusCode, &isSuccess, &userAgent); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Error scanning log",
 			})
@@ -381,6 +393,14 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			requestPathStr = "/"
 		}
 
+		// Format the user agent
+		var userAgentStr string
+		if userAgent.Valid {
+			userAgentStr = userAgent.String
+		} else {
+			userAgentStr = ""
+		}
+
 		// Add to logs list
 		logs = append(logs, map[string]interface{}{
 			"id":           id,
@@ -393,6 +413,7 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			"latency_ms":   latencyMS,
 			"status_code":  statusCode,
 			"is_success":   isSuccess,
+			"user_agent":   userAgentStr,
 		})
 	}
 
@@ -410,6 +431,7 @@ func GetRecentLogs(c *fiber.Ctx) error {
 			"status_code":  statusCode,
 			"client_ip":    clientIP,
 			"request_path": requestPath,
+			"user_agent":   userAgent,
 			"backend_id":   backendID,
 			"is_success":   successFilter,
 			"start_date":   startDate,
