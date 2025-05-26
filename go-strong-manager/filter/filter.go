@@ -114,7 +114,6 @@ type FilterResult struct {
 
 // matchesRule checks if a request matches a filter rule
 func matchesRule(rule models.FilterRule, clientIP, hostname, requestPath string) bool {
-	println("matchesRule", rule.MatchType, rule.MatchValue, clientIP, hostname, requestPath)
 	switch rule.MatchType {
 	case models.FilterMatchTypeIP:
 		return matchesIP(rule.MatchValue, clientIP)
