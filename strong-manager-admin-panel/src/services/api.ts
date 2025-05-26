@@ -167,7 +167,19 @@ export const filterRulesAPI = {
   }) => api.patch(`/admin/api/filter-rules/${id}`, rule),
   delete: (id: number) => api.delete(`/admin/api/filter-rules/${id}`),
   toggle: (id: number) => api.patch(`/admin/api/filter-rules/${id}/toggle`),
-  getLogs: (limit = 100, page = 1) => api.get(`/admin/api/filter-rules/logs?limit=${limit}&page=${page}`),
+  getLogs: (limit = 100, page = 1, filters?: Record<string, string>) => {
+    let url = `/admin/api/filter-rules/logs?limit=${limit}&page=${page}`;
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          url += `&${key}=${encodeURIComponent(value)}`;
+        }
+      });
+    }
+    
+    return api.get(url);
+  },
 };
 
 export default api; 

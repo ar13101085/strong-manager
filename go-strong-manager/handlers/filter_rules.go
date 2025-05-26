@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/arifur/strong-reverse-proxy/database"
@@ -173,21 +174,82 @@ func ToggleFilterRule(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"is_active": newStatus})
 }
 
-// GetFilterLogs returns filter logs with pagination
+// GetFilterLogs returns filter logs with pagination and filtering
 func GetFilterLogs(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	limit := c.QueryInt("limit", 50)
 	offset := (page - 1) * limit
 
-	// Get total count
+	// Get filter parameters
+	clientIP := c.Query("client_ip")
+	hostname := c.Query("hostname")
+	requestPath := c.Query("request_path")
+	matchType := c.Query("match_type")
+	actionType := c.Query("action_type")
+	statusCode := c.Query("status_code")
+	filterID := c.Query("filter_id")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	// Build WHERE clause for filters
+	whereConditions := []string{}
+	args := []interface{}{}
+
+	if clientIP != "" {
+		whereConditions = append(whereConditions, "fl.client_ip LIKE ?")
+		args = append(args, "%"+clientIP+"%")
+	}
+	if hostname != "" {
+		whereConditions = append(whereConditions, "fl.hostname LIKE ?")
+		args = append(args, "%"+hostname+"%")
+	}
+	if requestPath != "" {
+		whereConditions = append(whereConditions, "fl.request_path LIKE ?")
+		args = append(args, "%"+requestPath+"%")
+	}
+	if matchType != "" {
+		whereConditions = append(whereConditions, "fl.match_type = ?")
+		args = append(args, matchType)
+	}
+	if actionType != "" {
+		whereConditions = append(whereConditions, "fl.action_type = ?")
+		args = append(args, actionType)
+	}
+	if statusCode != "" {
+		whereConditions = append(whereConditions, "fl.status_code = ?")
+		args = append(args, statusCode)
+	}
+	if filterID != "" {
+		whereConditions = append(whereConditions, "fl.filter_id = ?")
+		args = append(args, filterID)
+	}
+	if startDate != "" {
+		whereConditions = append(whereConditions, "fl.timestamp >= ?")
+		args = append(args, startDate)
+	}
+	if endDate != "" {
+		whereConditions = append(whereConditions, "fl.timestamp <= ?")
+		args = append(args, endDate)
+	}
+
+	whereClause := ""
+	if len(whereConditions) > 0 {
+		whereClause = "WHERE " + strings.Join(whereConditions, " AND ")
+	}
+
+	// Get total count with filters
+	countQuery := "SELECT COUNT(*) FROM filter_logs fl " + whereClause
 	var total int
-	err := database.DB.QueryRow("SELECT COUNT(*) FROM filter_logs").Scan(&total)
+	err := database.DB.QueryRow(countQuery, args...).Scan(&total)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to get total count"})
 	}
 
-	// Get logs with pagination
-	rows, err := database.DB.Query(`
+	// Calculate total pages
+	totalPages := (total + limit - 1) / limit
+
+	// Get logs with pagination and filters
+	query := `
 		SELECT 
 			fl.id, fl.timestamp, fl.client_ip, fl.hostname, fl.request_path,
 			fl.user_agent, fl.filter_id, fl.match_type, fl.match_value,
@@ -196,10 +258,15 @@ func GetFilterLogs(c *fiber.Ctx) error {
 			filter_logs fl
 		LEFT JOIN 
 			filter_rules fr ON fl.filter_id = fr.id
+		` + whereClause + `
 		ORDER BY 
 			fl.timestamp DESC
-		LIMIT ? OFFSET ?
-	`, limit, offset)
+		LIMIT ? OFFSET ?`
+
+	// Add limit and offset to args
+	queryArgs := append(args, limit, offset)
+
+	rows, err := database.DB.Query(query, queryArgs...)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch filter logs"})
 	}
@@ -236,10 +303,25 @@ func GetFilterLogs(c *fiber.Ctx) error {
 		logs = append(logs, logMap)
 	}
 
+	// Return response in format similar to stats logs
 	return c.JSON(fiber.Map{
-		"logs":  logs,
-		"total": total,
-		"page":  page,
-		"limit": limit,
+		"data": logs,
+		"pagination": fiber.Map{
+			"total_items":  total,
+			"total_pages":  totalPages,
+			"current_page": page,
+			"limit":        limit,
+		},
+		"filters": fiber.Map{
+			"client_ip":    clientIP,
+			"hostname":     hostname,
+			"request_path": requestPath,
+			"match_type":   matchType,
+			"action_type":  actionType,
+			"status_code":  statusCode,
+			"filter_id":    filterID,
+			"start_date":   startDate,
+			"end_date":     endDate,
+		},
 	})
 }
