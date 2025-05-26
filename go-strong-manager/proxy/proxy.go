@@ -245,7 +245,8 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Host = targetURL.Host
+	//r.Host = targetURL.Host
+	r.Header.Set("host", hostname)
 	// Create reverse proxy
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
