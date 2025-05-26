@@ -206,7 +206,7 @@ func (bl *BufferedLogger) batchInsert(entries []LogEntry) error {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Printf("Successfully wrote %d log entries to database", len(entries))
+	//log.Printf("Successfully wrote %d log entries to database", len(entries))
 	return nil
 }
 
