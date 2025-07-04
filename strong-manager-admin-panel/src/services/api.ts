@@ -180,6 +180,7 @@ export const filterRulesAPI = {
     
     return api.get(url);
   },
+  deleteAllLogs: () => api.delete('/admin/api/filter-rules/logs/delete-all'),
 };
 
 export default api; 

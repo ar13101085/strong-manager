@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RiAddLine, RiEditLine, RiDeleteBinLine, RiToggleLine, RiEyeLine, RiFilterLine, RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
+import { RiAddLine, RiEditLine, RiDeleteBinLine, RiToggleLine, RiEyeLine, RiFilterLine, RiArrowLeftSLine, RiArrowRightSLine, RiDeleteBin6Line } from 'react-icons/ri';
 import { BsToggleOff, BsToggleOn } from 'react-icons/bs';
 import { filterRulesAPI } from '../services/api';
 
@@ -52,6 +52,7 @@ const RequestRules: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showLogsModal, setShowLogsModal] = useState(false);
   const [editingRule, setEditingRule] = useState<FilterRule | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   // Pagination and filter states for logs
   const [logsPage, setLogsPage] = useState<number>(1);
@@ -162,6 +163,15 @@ const RequestRules: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['filterRules'] });
     },
+  });
+
+  // Delete all filter logs mutation
+  const deleteFilterLogsMutation = useMutation({
+    mutationFn: () => filterRulesAPI.deleteAllLogs(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['filterLogs'] });
+      setShowDeleteConfirm(false);
+    }
   });
 
   const resetForm = () => {
@@ -556,6 +566,14 @@ const RequestRules: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900">Filter Logs</h3>
               <div className="flex items-center space-x-2">
                 <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center space-x-1 rounded-md px-3 py-1 text-sm bg-red-50 text-red-600 hover:bg-red-100"
+                  disabled={deleteFilterLogsMutation.isPending}
+                >
+                  <RiDeleteBin6Line />
+                  <span>Delete All Logs</span>
+                </button>
+                <button
                   onClick={() => setShowLogsFilters(!showLogsFilters)}
                   className="flex items-center px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                 >
@@ -844,6 +862,34 @@ const RequestRules: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete all filter logs? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={deleteFilterLogsMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteFilterLogsMutation.mutate()}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+                disabled={deleteFilterLogsMutation.isPending}
+              >
+                {deleteFilterLogsMutation.isPending ? 'Deleting...' : 'Delete All'}
+              </button>
+            </div>
           </div>
         </div>
       )}

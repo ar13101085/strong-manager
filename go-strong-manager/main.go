@@ -191,6 +191,7 @@ func setupAdminRoutes(app *fiber.App) {
 	filterRules.Delete("/:id", handlers.DeleteFilterRule)
 	filterRules.Patch("/:id/toggle", handlers.ToggleFilterRule)
 	filterRules.Get("/logs", handlers.GetFilterLogs)
+	filterRules.Delete("/logs/delete-all", handlers.DeleteAllFilterLogs)
 }
 
 // initLogRetention initializes the log retention mechanism

@@ -325,3 +325,13 @@ func GetFilterLogs(c *fiber.Ctx) error {
 		},
 	})
 }
+
+// DeleteAllFilterLogs deletes all filter logs
+func DeleteAllFilterLogs(c *fiber.Ctx) error {
+	_, err := database.DB.Exec("DELETE FROM filter_logs")
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to delete filter logs"})
+	}
+
+	return c.JSON(fiber.Map{"message": "All filter logs deleted successfully"})
+}
