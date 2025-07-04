@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install Node.js dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # 🔥 Copy .env first (important for Vite build)
 COPY .env .env
@@ -47,7 +47,7 @@ COPY --from=builder /app/dist ./dist
 COPY .env .env
 
 # Install "serve" globally (to serve Vite static files)
-RUN npm install -g serve
+RUN npm install --legacy-peer-deps -g serve
 
 # Expose both ports (frontend 3000 + Fiber backend 8090)
 EXPOSE 3000
